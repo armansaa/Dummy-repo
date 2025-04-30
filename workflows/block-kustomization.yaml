@@ -1,0 +1,23 @@
+name: Block Kustomization in nn-id-dev cluster
+
+on:
+  pull_request:
+    paths:
+      - 'flux/clusters/nn-id-dev/**'
+
+jobs:
+  block-kustomization-file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Check for forbidden kustomization file
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          if git diff --name-status origin/${{ github.base_ref }} | grep -E "^A\s+flux/clusters/nn-id-dev/.*/?kustomization.*"; then
+            echo "❌ Error: Adding a kustomization file in flux/clusters/nn-id-dev is not allowed."
+            exit 1
+          else
+            echo "✅ No forbidden kustomization file detected."
+          fi
