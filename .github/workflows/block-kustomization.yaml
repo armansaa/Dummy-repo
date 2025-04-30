@@ -1,6 +1,9 @@
 name: Block Kustomization in nn-id-dev cluster
 
 on:
+  push:
+    paths:
+      - 'flux/clusters/nn-id-dev/**'
   pull_request:
     paths:
       - 'flux/clusters/nn-id-dev/**'
