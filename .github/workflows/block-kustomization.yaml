@@ -2,9 +2,13 @@ name: Block Kustomization in nn-id-dev cluster
 
 on:
   push:
+    branches:
+      - master  # Mengubah dari main ke master
     paths:
       - 'flux/clusters/nn-id-dev/**'
   pull_request:
+    branches:
+      - master  # Mengubah dari main ke master
     paths:
       - 'flux/clusters/nn-id-dev/**'
 
@@ -20,9 +24,20 @@ jobs:
       - name: Check for forbidden kustomization file in pull request
         if: github.event_name == 'pull_request'
         run: |
-          # For pull requests, check files changed in this PR
-          git fetch origin ${{ github.base_ref }} --depth=1
-          if git diff --name-status origin/${{ github.base_ref }}..HEAD | grep -iE "^A\s+flux/clusters/nn-id-dev/.*/?kustomization.*"; then
+          # Menampilkan informasi debug
+          echo "Event name: ${{ github.event_name }}"
+          echo "Base ref: ${{ github.base_ref }}"
+          echo "Head ref: ${{ github.head_ref }}"
+          echo "Repository: ${{ github.repository }}"
+          
+          # Menggunakan metode alternatif untuk memeriksa file yang ditambahkan
+          git fetch origin ${{ github.base_ref || 'master' }} --depth=1
+          
+          # List semua file yang diubah dalam PR
+          echo "Modified files:"
+          git diff --name-only origin/${{ github.base_ref || 'master' }}...HEAD
+          
+          if git diff --name-status origin/${{ github.base_ref || 'master' }}...HEAD | grep -iE "^A\s+flux/clusters/nn-id-dev/.*/?kustomization.*"; then
             echo "❌ Error: Adding a kustomization file in flux/clusters/nn-id-dev is not allowed."
             exit 1
           else
