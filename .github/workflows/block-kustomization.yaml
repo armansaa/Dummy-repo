@@ -14,11 +14,26 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history to properly compare changes
 
-      - name: Check for forbidden kustomization file
+      - name: Check for forbidden kustomization file in pull request
+        if: github.event_name == 'pull_request'
         run: |
+          # For pull requests, check files changed in this PR
           git fetch origin ${{ github.base_ref }} --depth=1
-          if git diff --name-status origin/${{ github.base_ref }} | grep -E "^A\s+flux/clusters/nn-id-dev/.*/?kustomization.*"; then
+          if git diff --name-status origin/${{ github.base_ref }}..HEAD | grep -iE "^A\s+flux/clusters/nn-id-dev/.*/?kustomization.*"; then
+            echo "❌ Error: Adding a kustomization file in flux/clusters/nn-id-dev is not allowed."
+            exit 1
+          else
+            echo "✅ No forbidden kustomization file detected."
+          fi
+      
+      - name: Check for forbidden kustomization file in push
+        if: github.event_name == 'push'
+        run: |
+          # For direct pushes, check the latest commit
+          if git diff-tree --no-commit-id --name-status -r ${{ github.sha }} | grep -iE "^A\s+flux/clusters/nn-id-dev/.*/?kustomization.*"; then
             echo "❌ Error: Adding a kustomization file in flux/clusters/nn-id-dev is not allowed."
             exit 1
           else
