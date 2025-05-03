@@ -1,0 +1,22 @@
+name: Manual Test Workflow
+
+on:
+  workflow_dispatch: # Manually trigger the workflow
+
+jobs:
+  test-workflow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Check GitHub Actions Environment
+        run: |
+          echo "GitHub Actions is running!"
+          echo "Event name: ${{ github.event_name }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Workspace: ${{ github.workspace }}"
+          echo "Current directory structure:"
+          ls -la
+          echo "Workflows directory structure:"
+          ls -la .github/workflows/ || echo "Workflows directory not found"
