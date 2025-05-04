@@ -30,9 +30,14 @@ jobs:
         run: |
           echo "🔍 Checking files in PR..."
           git fetch origin ${{ github.base_ref }} --depth=1
-          git diff --name-status origin/${{ github.base_ref }}..HEAD
 
-          if git diff --name-status origin/${{ github.base_ref }}..HEAD | grep -iE "^[AM]\s+flux/clusters/nn-id-dev/.*/?kustomization\.ya?ml$"; then
+          git diff --name-only origin/${{ github.base_ref }}..HEAD | tee changed_files.txt
+
+          echo "📄 Files changed:"
+          cat -v changed_files.txt
+
+          # Gunakan grep -a dan LC_ALL=C agar path dengan karakter aneh bisa dibaca
+          if LC_ALL=C grep -a -iE "^flux/clusters/nn-id-dev/.*/?kustomization\.ya?ml$" changed_files.txt; then
             echo "❌ Error: Adding or modifying a kustomization file in flux/clusters/nn-id-dev is not allowed."
             exit 1
           else
