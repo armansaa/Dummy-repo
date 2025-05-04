@@ -55,3 +55,13 @@ jobs:
           else
             echo "✅ Clean."
           fi
+
+      - name: Close PR if forbidden kustomization detected
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          echo "❌ Closing PR due to forbidden file changes..."
+          gh pr close "${{ github.event.pull_request.number }}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --comment "PR automatically closed: editing kustomization.yaml under nn-id-dev is not allowed."
