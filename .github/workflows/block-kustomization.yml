@@ -2,8 +2,8 @@ name: Block Kustomization in nn-id-dev cluster
 
 on:
   pull_request:
-    branches:
-      - master
+    # branches:
+    #   - master
     types: [opened, synchronize, reopened]
     paths: 
       - 'flux/clusters/nn-id-dev/**'
