@@ -2,10 +2,14 @@ name: Block Kustomization in nn-id-dev cluster
 
 on:
   pull_request:
-    # Semua PR ke branch master (atau default branch Anda)
+    branches:
+      - master
     types: [opened, synchronize, reopened]
-    # paths: flux/clusters/nn-id-dev/**   # (opsional, sudah kita filter manual nanti)
+    paths: 
+      - 'flux/clusters/nn-id-dev/**'
   push:
+    branches:
+      - master
     paths:
       - 'flux/clusters/nn-id-dev/**'
 
