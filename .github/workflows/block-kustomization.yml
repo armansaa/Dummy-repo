@@ -1,24 +1,13 @@
 name: Block Kustomization in nn-id-dev cluster
 
 on:
-
-  push:
-    branches:
-      - master
-    paths:
-      - 'flux/clusters/nn-id-dev/**'
-  
-
   pull_request:
-    branches:
-      - master
+    # Trigger untuk semua PR (tidak dibatasi paths agar tidak silent-fail)
+    # Filter file akan dilakukan di dalam script
+    types: [opened, synchronize, reopened]
+  push:
     paths:
       - 'flux/clusters/nn-id-dev/**'
-
-
-permissions:
-  contents: read
-  pull-requests: write
 
 jobs:
   block-kustomization-file:
@@ -27,60 +16,37 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Fetch all history untuk perbandingan yang lebih baik
-      
-      - name: Debug Information
+          fetch-depth: 0  # Untuk memastikan semua history tersedia
+
+      - name: Debug info
         run: |
           echo "Event name: ${{ github.event_name }}"
-          echo "Ref: ${{ github.ref }}"
           echo "Base ref: ${{ github.base_ref }}"
           echo "Head ref: ${{ github.head_ref }}"
-          echo "Repository: ${{ github.repository }}"
-          echo "Actor: ${{ github.actor }}"
-          echo "Current path: ${{ github.workspace }}"
-          ls -la .github/workflows/
-      
-      - name: Check for forbidden kustomization file in PR
+          git log --oneline -n 3
+
+      - name: Check for forbidden kustomization file in pull request
         if: github.event_name == 'pull_request'
         run: |
-          echo "Checking files in pull request..."
-          
-          # Menggunakan GitHub API untuk mendapatkan daftar file yang diubah
-          PR_FILES=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                     -H "Accept: application/vnd.github.v3+json" \
-                     "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" | \
-                     jq -r '.[].filename')
-          
-          echo "Files modified in PR:"
-          echo "$PR_FILES"
-          
-          # Periksa apakah ada file kustomization.yaml yang ditambahkan di path yang dilarang
-          if echo "$PR_FILES" | grep -iE "flux/clusters/nn-id-dev/.*/?kustomization.*"; then
-            echo "❌ Error: Adding a kustomization file in flux/clusters/nn-id-dev is not allowed."
-            echo "::error::Adding a kustomization file in flux/clusters/nn-id-dev is not allowed."
+          echo "🔍 Checking files in PR..."
+          git fetch origin ${{ github.base_ref }} --depth=1
+          git diff --name-status origin/${{ github.base_ref }}..HEAD
+
+          if git diff --name-status origin/${{ github.base_ref }}..HEAD | grep -iE "^[AM]\s+flux/clusters/nn-id-dev/.*/?kustomization\.ya?ml$"; then
+            echo "❌ Error: Adding or modifying a kustomization file in flux/clusters/nn-id-dev is not allowed."
             exit 1
           else
             echo "✅ No forbidden kustomization file detected."
           fi
-      
+
       - name: Check for forbidden kustomization file in push
         if: github.event_name == 'push'
         run: |
-          echo "Checking files in push..."
-          
-          # Ambil commit terakhir
-          LAST_COMMIT_SHA=$(git rev-parse HEAD)
-          PREVIOUS_COMMIT_SHA=$(git rev-parse HEAD~1)
-          
-          # Lihat file yang diubah pada commit terakhir
-          echo "Files changed in last commit:"
-          CHANGED_FILES=$(git diff --name-only $PREVIOUS_COMMIT_SHA $LAST_COMMIT_SHA)
-          echo "$CHANGED_FILES"
-          
-          # Periksa apakah ada file kustomization.yaml di path yang dilarang
-          if echo "$CHANGED_FILES" | grep -iE "flux/clusters/nn-id-dev/.*/?kustomization.*"; then
-            echo "❌ Error: Adding a kustomization file in flux/clusters/nn-id-dev is not allowed."
-            echo "::error::Adding a kustomization file in flux/clusters/nn-id-dev is not allowed."
+          echo "🔍 Checking files in push..."
+          git diff-tree --no-commit-id --name-status -r ${{ github.sha }}
+
+          if git diff-tree --no-commit-id --name-status -r ${{ github.sha }} | grep -iE "^[AM]\s+flux/clusters/nn-id-dev/.*/?kustomization\.ya?ml$"; then
+            echo "❌ Error: Adding or modifying a kustomization file in flux/clusters/nn-id-dev is not allowed."
             exit 1
           else
             echo "✅ No forbidden kustomization file detected."
