@@ -3,10 +3,6 @@ name: Block Kustomization in nn-id-dev cluster
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    # paths: flux/clusters/nn-id-dev/**  
-  push:
-    paths:
-      - 'flux/clusters/nn-id-dev/**'
 
 jobs:
   block-kustomization-file:
@@ -35,19 +31,6 @@ jobs:
 
           echo "📄 Changed files:"
           git diff --name-only origin/${{ github.base_ref }}..HEAD | tee changed_files.txt
-
-          if grep -iE 'flux/clusters/nn-id-dev/.*/?kustomization\.ya?ml$' changed_files.txt; then
-            echo "❌ Error: kustomization file detected under flux/clusters/nn-id-dev!"
-            exit 1
-          else
-            echo "✅ Clean."
-          fi
-
-      - name: Check forbidden kustomization in push
-        if: github.event_name == 'push'
-        run: |
-          echo "📄 Changed files in push:"
-          git diff-tree --no-commit-id --name-only -r ${{ github.sha }} | tee changed_files.txt
 
           if grep -iE 'flux/clusters/nn-id-dev/.*/?kustomization\.ya?ml$' changed_files.txt; then
             echo "❌ Error: kustomization file detected under flux/clusters/nn-id-dev!"
